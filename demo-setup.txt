@@ -1,0 +1,104 @@
+== Setup Demo SSH Usercerts ==
+
+1. Get a Linux server capable of running Dcoker
+- DigitalOcean Droplet - Ubuntu 18.04 LTS - 1 GB, 25 GB disk
+- apt-get update; apt-get upgrade
+- apt-get install docker-ce docker-compose links
+  - https://docs.docker.com/install/linux/docker-ce/ubuntu/
+  - add their repo then: apt-get install docker-ce docker-ce-cli containerd.io
+- create user 'sshusercerts'
+  - useradd sshusercerts -m -s /bin/bash
+  - usermod -aG docker sshusercerts
+
+2. Test a simple container
+- /home/sshusercerts/simple
+  - files: Dockerfile
+  # our base image
+  FROM ubuntu:18.04
+
+  # run the application
+  CMD ["echo", "Hello"]
+- docker build --tag=simple .
+- docker run -it simple
+  - should print "Hello"
+  
+3. Create signing certificate
+- /home/sshusercerts/CA
+- ssh-keygen -f demosshusercert
+  - no password; generates the certificates public and private key
+- ssh-keygen -l to check
+- sign a public key manually
+  - cd ; ssh-keygen; 
+  - sign: ssh-keygen -s ./CA/demosshusercert -I user_sshusercerts -h -n sshusercerts -V +1w ./.ssh/id_rsa.pub
+  - info: ssh-keygen -L -f ./.ssh/id_rsa-cert.pub look for Valid line
+  
+4. sshusercerts core service
+- /home/sshusercerts/sshusercerts
+  - files: Dockerfile; main.py; server.py
+  - copy private and public key from ../CA
+- edit Dockerfile to refernce correct key name in CERTNAME var
+- docker build --tag=sshusercerts .
+- docker run -it -p 8080:8080 sshusercerts
+- test with links http://127.0.0.1:8080/sign.html
+
+4a. refactor docker base image
+- even small changes/typos cause lengthy rebuild
+- cd ; mkdir sshusercerts-base; cp sshusercerts/Dockerfile sshusercerts-base
+  cd sshusercerts-base; vi Dockerfile - delete everything but FROM and 2x RUN
+- cd ; cd sshusercerts ; vi Dockerfile - change FROM to sshusercerts-base
+
+---
+
+5. nginx frontend 443 forwards to 8080 and we use a let's encrypt certificate, requires docker-compose,
+a domainname is required, needs to be configured to resolve to the IP of the server
+here we use: sshusercertsdemo.demodomain.life
+
+- cd; mkdir sshusercerts-nginx
+- files: docker-compose.yml; data/nginx/app.conf; init-letsencrypt.sh
+- edit app.conf so that sshusercertsdemo.demodomain.life is reference inteh 2 server_name lines, plus the 2 ssl_certifictes lines,
+  plus the proxy_pass line
+- edit init-letsencrpt.sh to include sshusercertsdemo.demodomain.life, set staging to 1 while testing
+- run init-letsencrypt.sh - this shoudl request a certificate, once that works switch to staging=0 a rerun to get  
+  a real certificate
+  init-letsencrypt comes from: https://medium.com/@pentacent/nginx-and-lets-encrypt-with-docker-in-less-than-5-minutes-b4b8a60d3a71
+  and depends on docker-compose
+
+6. start it all up together via a docker swarm
+- docker swarm init 
+- docker stack deploy -d docker-deploy.yml uc
+
+7. Prepare user environment: Demomode creates users with a restricted shell in directory /home/genericuser
+- cd /home; mkdir genericuser; mkdir genericuser/bin
+- cp /bin/ls /home/genericuser/bin
+- echo "export PATH=/home/genericuser/bin" > /home/genericuser/.bashrc
+- echo "export PATH=/home/genericuser/bin" > /home/genericuser/.bash_profile
+- touch "/home/genericuser/You_are_in_a_restricted_env"
+
+8. sign a cert
+username, password, OTP and the contents of id_rsa.pub
+
+put the returning contents in .ssh\id_rsa-cert.pub
+
+log into the demoserver: ssh sshusercertsdemo.demodomain.life
+
+you will be in a restricted shell, only ls is allowed...
+
+Locally check validity with this command:
+
+ssh-keygen -L -f .ssh\id_rsa-cert.pub
+.ssh\id_rsa-cert.pub:
+        Type: ssh-rsa-cert-v01@openssh.com user certificate
+        Public key: RSA-CERT SHA256:VGzctJZ+mVXrKiDSUUwWpi4t2UhvTmn+sfrK4mOHBY0
+        Signing CA: RSA SHA256:p3Ah04/bmullNoCN8oafnb9iTHtPlPv9h85c63iEWBQ
+        Key ID: "user_wkandek_cert"
+        Serial: 0
+        Valid: from 2019-03-13T08:01:00 to 2019-03-13T09:02:08
+        Principals:
+                wkandek
+        Critical Options: (none)
+        Extensions:
+                permit-X11-forwarding
+                permit-agent-forwarding
+                permit-port-forwarding
+                permit-pty
+                permit-user-rc
