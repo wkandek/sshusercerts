@@ -26,7 +26,7 @@ In the certificate based approach we create a private and public key for a signi
 to trust certificates that are signed by the private key of the SAC by copying the public key to each target.
 A user creates a public/private key as before, but needs to get their public key signed by the SAC. That signed public key is then used to authenticate to the target.
 
-![Diagram 1](https://github.com/wkandek/sshusercerts/blob/master/sshusercerts_diag1.png)
+![Diagram 1](https://github.com/wkandek/sshusercerts/blob/master/sshusercerts_diag1.PNG)
 
 Why introduce this complication?
 - the targets now only need 1 public key to authenticate all users
