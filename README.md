@@ -24,8 +24,9 @@ target servers and provides access as long as it exists, i.e. there is expiratio
 
 In the certificate based approach we create a private and public key for a signing authority certificate (SAC) . We then configure the targets
 to trust certificates that are signed by the private key of the SAC by copying the public key to each target.
-A user creates a public/private key as before, but needs to get their public key signed by the SAC. That signed public key is then
-used to authenticate to the target.
+A user creates a public/private key as before, but needs to get their public key signed by the SAC. That signed public key is then used to authenticate to the target.
+
+!(sshusercerts_diag1.png)
 
 Why introduce this complication?
 - the targets now only need 1 public key to authenticate all users
