@@ -1,6 +1,12 @@
 == Setup Demo SSH Usercerts ==
 
-1. Get a Linux server capable of running Dcoker
+In the demo we will setup 3 linux machines, a client, a server and an authnetication server. Client and Server are
+generic, the client will be used to login into the server via SSH. The authentciation server will emit the certificates
+used. In demo mode it also has simple capabilities to add new users, generate 2FA tokens and allow for an SSH login into a 
+restricted shell - the idea here is to use the setup in a workshop where the participants might have limited access to a server
+and client machine.
+
+1. Get a Linux server capable of running Docker
 - DigitalOcean Droplet - Ubuntu 18.04 LTS - 1 GB, 25 GB disk
 - apt-get update; apt-get upgrade
 - apt-get install docker-ce docker-compose links
@@ -102,3 +108,8 @@ ssh-keygen -L -f .ssh\id_rsa-cert.pub
                 permit-port-forwarding
                 permit-pty
                 permit-user-rc
+
+9. Create 2 Linux servers used for login demos 
+
+9a. Use the authnetication server to create a new user via /add.py 
+
