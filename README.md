@@ -2,7 +2,7 @@
 Time based authentication for OpenSSH
 
 sshusercerts is a Proof of Concept for duration based Authentication for OpenSSH. OpenSSH is widely 
-used for system administration of Linux/Unix based systems. It can authenticate via username/password, 
+used for system administration of Linux/Unix based systems. The user can authenticate via username/password, 
 via keys and via certificate. Authentication via certificates is the option we will use here.
 Certificates are emitted by a centralized Certificate Authority and have an expiration date, very similar in
 concept to SSL certificates for websites.These 2 characteristics make certificates an interesting choice for 
@@ -17,13 +17,11 @@ Prior Art:
 
 OpenSSH is the default for Linux/Unix system administration, allowing the system administrator to have a text based terminal into a network connected, local or remote system. For authentication username/password is the default, but key based is a very
 popular alternative. In key based authentication the user creates a private/public key pair and places the public 
-key on the remote system and use their private key to authenticate - this  eliminates the need for username 
+key on the remote system and uses her private key to authenticate - this eliminates the need for username 
 and password and provides a fast login experience. It is also the base for many automation options, as it can be used for a 
-batch type login in user written scripts and other automation tools, for example Ansible. SSH is very powerful and many 
-resources exist on the web exlaining its basic and advanced use: https://github.com/moul/awesome-ssh
+batch type login in user written scripts and other automation tools, for example Ansible. SSH is very powerful and full featured and many resources exist on the web explaining its basic and advanced use: https://github.com/moul/awesome-ssh
 
-In key based authentication the user creates a public/private key pair and copies the public key is copied to the target server. 
-Then the private key is used to authenticate the user on the target server. The public key provides access as long as it exists, i.e. there is expiration attached to the keys. https://www.rosehosting.com/blog/ssh-login-without-password-using-ssh-keys/
+In key based authentication the user creates a public/private key pair and copies the public key to the target server. On login  the private key is used to authenticate the user to the target server. The public key provides access as long as it exists, i.e. there is no expiration attached to the keys. https://www.rosehosting.com/blog/ssh-login-without-password-using-ssh-keys/
 
 In the certificate based approach we create a private and public key for a signing authority certificate (SAC).  
 We then configure the targets to trust certificates that are signed by the private key of the SAC by copying 
