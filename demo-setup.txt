@@ -2,60 +2,46 @@
 
 In the demo we will setup 3 linux machines, a client, a server and an authnetication server. Client and Server are
 generic, the client will be used to login into the server via SSH. The authentciation server will emit the certificates
-used. In demo mode it also has simple capabilities to add new users, generate 2FA tokens and allow for an SSH login into a 
-restricted shell - the idea here is to use the setup in a workshop where the participants might have limited access to a server
-and client machine.
+used. In explicit demo mode it also has simple capabilities to add new users, generate 2FA tokens and allow for an 
+SSH login into a restricted shell - the idea here is to use the setup in a workshop where the participants might have limited access to a server and client machine. It is not a good idea to provide commandline access to the server that signs the
+certificate used, so use only in real demo situations.
 
-1. Get a Linux server capable of running Docker
+1. Get a Linux server for authentication
 - DigitalOcean Droplet - Ubuntu 18.04 LTS - 1 GB, 25 GB disk
 - apt-get update; apt-get upgrade
-- apt-get install docker-ce docker-compose links
-  - https://docs.docker.com/install/linux/docker-ce/ubuntu/
-  - add their repo then: apt-get install docker-ce docker-ce-cli containerd.io
 - create user 'sshusercerts'
   - useradd sshusercerts -m -s /bin/bash
-  - usermod -aG docker sshusercerts
+- create user 'testuser'
+  - useradd testuser -m -s /bin/bash
+  - passwd testuser
 
-2. Test a simple container
-- /home/sshusercerts/simple
-  - files: Dockerfile
-  # our base image
-  FROM ubuntu:18.04
+2. create a client machine
+- DigitalOcean Droplet - Ubuntu 18.04 LTS - 1 GB, 25 GB disk
+- create user 'testuser'
+  - useradd testuser -m -s /bin/bash
 
-  # run the application
-  CMD ["echo", "Hello"]
-- docker build --tag=simple .
-- docker run -it simple
-  - should print "Hello"
-  
 3. Create signing certificate
-- /home/sshusercerts/CA
+- mkdir /home/sshusercerts/CA; cd CA
 - ssh-keygen -f demosshusercert
   - no password; generates the certificates public and private key
 - ssh-keygen -l to check
 - sign a public key manually
+  - copy a key from 
   - cd ; ssh-keygen; 
   - sign: ssh-keygen -s ./CA/demosshusercert -I user_sshusercerts -h -n sshusercerts -V +1w ./.ssh/id_rsa.pub
   - info: ssh-keygen -L -f ./.ssh/id_rsa-cert.pub look for Valid line
   
-4. sshusercerts core service
-- /home/sshusercerts/sshusercerts
-  - files: Dockerfile; main.py; server.py
+3. Install sshusercerts core service
+- mkdir /home/sshusercerts/sshusercerts; cd sshusercerts
+  - files: main.py; server.py
   - copy private and public key from ../CA
-- edit Dockerfile to refernce correct key name in CERTNAME var
+  
+- edit Dockerfile to reference correct key name in CERTNAME var
 - docker build --tag=sshusercerts .
 - docker run -it -p 8080:8080 sshusercerts
 - test with links http://127.0.0.1:8080/sign.html
 
-4a. refactor docker base image
-- even small changes/typos cause lengthy rebuild
-- cd ; mkdir sshusercerts-base; cp sshusercerts/Dockerfile sshusercerts-base
-  cd sshusercerts-base; vi Dockerfile - delete everything but FROM and 2x RUN
-- cd ; cd sshusercerts ; vi Dockerfile - change FROM to sshusercerts-base
-
----
-
-5. nginx frontend 443 forwards to 8080 and we use a let's encrypt certificate, requires docker-compose,
+4. nginx frontend 443 forwards to 8080 and we use a let's encrypt certificate
 a domainname is required, needs to be configured to resolve to the IP of the server
 here we use: sshusercertsdemo.demodomain.life
 
